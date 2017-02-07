@@ -1,5 +1,11 @@
 package org.apache.poi.wp.usermodel;
 
+import org.apache.poi.wp.usermodel.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Iterator;
 import java.util.Properties;
 
 import javax.activation.DataHandler;
@@ -17,81 +23,95 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
-
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class mail {
 
-	private static void addAttachment(Multipart multipart, String filename) throws MessagingException
-	{
-	    DataSource source = new FileDataSource(filename);
-	    BodyPart messageBodyPart = new MimeBodyPart();        
-	    messageBodyPart.setDataHandler(new DataHandler(source));
-	    messageBodyPart.setFileName(filename);
-	    multipart.addBodyPart(messageBodyPart);
+	private static void addAttachment(Multipart multipart, String filename) throws MessagingException {
+		DataSource source = new FileDataSource(filename);
+		BodyPart messageBodyPart = new MimeBodyPart();
+		messageBodyPart.setDataHandler(new DataHandler(source));
+		messageBodyPart.setFileName(filename);
+		multipart.addBodyPart(messageBodyPart);
 	}
-	
-public static void test(String cliente, String items){
-    Properties props = System.getProperties();
-    props.put("mail.smtp.starttls.enable", true); 
-    props.put("mail.smtp.host", "smtp.gmail.com");
-    props.put("mail.smtp.user", "username");
-    props.put("mail.smtp.password", "password");
-    props.put("mail.smtp.port", "25");
-    props.put("mail.smtp.auth", true);
 
+	private static void send(MimeMessage message, Session session, String cuenta, String psw)
+			throws MessagingException {
 
+		Transport transport = session.getTransport("smtp");
+		transport.connect("smtp.gmail.com", cuenta, psw);
+		System.out.println("Transport: " + transport.toString());
+		transport.sendMessage(message, message.getAllRecipients());
+	}
 
-    Session session = Session.getInstance(props,null);
-    MimeMessage message = new MimeMessage(session);
+	private static void addTo(MimeMessage message, String client)
+			throws AddressException, MessagingException, IOException {
+		String mail = "mails.xlsx";
+		FileInputStream inputMail = new FileInputStream(new File(mail));
+		Workbook workbook = new XSSFWorkbook(inputMail);
+		Sheet firstSheet = workbook.getSheetAt(0);
+		Iterator<Row> iterator = firstSheet.iterator();
 
-    System.out.println("Port: "+session.getProperty("mail.smtp.port"));
+		while (iterator.hasNext()) {
+			Row nextRow = iterator.next();
+			String clienteExcel = Envio.cellString(nextRow.getCell(0));
+			
+			if (clienteExcel.equals(client)){
+				String mailExcel=Envio.cellString(nextRow.getCell(1));
+			
+				message.addRecipients(Message.RecipientType.TO, InternetAddress.parse(mailExcel));
+			}
+		}
+	}
 
-    
-    try {
-        InternetAddress from = new InternetAddress("lauvizzari@neotel.com.ar");
-        message.setSubject("FTP "+cliente);
-        message.setFrom(from);
-        message.addRecipients(Message.RecipientType.TO, InternetAddress.parse("nlopez@neotel.com.ar"));
+	public static void test(String cliente, String items, String tipo, String cuenta, String psw)
+			throws IOException {
+		Properties props = System.getProperties();
+		props.put("mail.smtp.starttls.enable", true);
+		props.put("mail.smtp.host", "smtp.gmail.com");
+		props.put("mail.smtp.user", "username");
+		props.put("mail.smtp.password", "password");
+		props.put("mail.smtp.port", "25");
+		props.put("mail.smtp.auth", true);
 
-        
-        Multipart multipart = new MimeMultipart("alternative");
+		Session session = Session.getInstance(props, null);
+		MimeMessage message = new MimeMessage(session);
 
-      
-        BodyPart messageBodyPart = new MimeBodyPart();
-        messageBodyPart.setText("some text to send");
+		System.out.println("Port: " + session.getProperty("mail.smtp.port"));
 
-        
-        multipart.addBodyPart(messageBodyPart);
+		if (tipo.equals("FTP")) {
+			try {
+				InternetAddress from = new InternetAddress(cuenta);
+				message.setSubject("FTP " + cliente);
+				message.setFrom(from);
+				addTo(message, cliente);
 
-        
-        messageBodyPart = new MimeBodyPart();
-        String htmlMessage = "Estimados de "+cliente+ "\n\n Nos llego la alerta del sistema de que los items:" +items+ " no están teniendo un backup via FTP. \nPara esto sugerimos a nuestros clientes que generen una tarea diaria de extracción vía FTP de los archivos claves del sistemas. De esta forma tenemos un respaldo ante cualquier contingencia que ocurra.\n\nAdjunto el manual de un soft que se utilizan en el grueso de nuestros clientes para realizar este respaldo diariamente.No es excluyente que sea este el soft a utilizar pueden utilizar el que mas les convenga. \n Al ser un tema tan critico tengo que adjuntarles el comunicado sobre el tratamiento de las alertas de backup y el manual de backup.\n\n\n	Saludos att Neotel";
-        messageBodyPart.setContent(htmlMessage, "text/plain");
-        
+				Multipart multipart = new MimeMultipart();
 
-        addAttachment(multipart, "instructivo.docx");
-        addAttachment(multipart, "notificacion.docx");
-        
-        multipart.addBodyPart(messageBodyPart);
+				BodyPart messageBodyPart = new MimeBodyPart();
+				messageBodyPart.setText("Estimados de " + cliente
+						+ "\n\n Nos llego la alerta del sistema de que los items:" + items
+						+ " no están teniendo un backup via FTP. \nPara esto sugerimos a nuestros clientes que generen una tarea diaria de extracción vía FTP de los archivos claves del sistemas. De esta forma tenemos un respaldo ante cualquier contingencia que ocurra.\n\nAdjunto el manual de un soft que se utilizan en el grueso de nuestros clientes para realizar este respaldo diariamente.No es excluyente que sea este el soft a utilizar pueden utilizar el que mas les convenga. \n Al ser un tema tan critico tengo que adjuntarles el comunicado sobre el tratamiento de las alertas de backup y el manual de backup.\n\n\n	Saludos att Neotel");
 
-        
-        message.setContent(multipart);
+				multipart.addBodyPart(messageBodyPart);
 
-       
-        Transport transport = session.getTransport("smtp");
-        transport.connect("smtp.gmail.com", "lvizzari@neotel.com.ar", "magate101458");
-        System.out.println("Transport: "+transport.toString());
-        transport.sendMessage(message, message.getAllRecipients());
+				addAttachment(multipart, "instructivo.docx");
+				addAttachment(multipart, "notificacion.docx");
 
+				message.setContent(multipart);
 
-    } catch (AddressException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-    } catch (MessagingException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-    }
-}
+				send(message, session, cuenta, psw);
 
-
+			} catch (AddressException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (MessagingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
 }

@@ -2,7 +2,11 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
-	<classpathentry kind="lib" path="C:/Users/Lautaro/Downloads/poi-bin-3.15-20160924/poi-3.15/poi-3.15.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Lautaro/Downloads/poi-bin-3.15-20160924/poi-3.15/poi-3.15.jar" sourcepath="C:/Users/Lautaro/Downloads/poi-bin-3.15-20160924/poi-3.15/poi-3.15.jar">
+		<attributes>
+			<attribute name="source_encoding" value="UTF-8"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="lib" path="C:/Users/Lautaro/Downloads/poi-bin-3.15-20160924/poi-3.15/poi-ooxml-3.15.jar"/>
 	<classpathentry kind="lib" path="C:/Users/Lautaro/Downloads/poi-bin-3.16-beta1-20161120/poi-3.16-beta1/lib/commons-collections4-4.1.jar"/>
 	<classpathentry kind="lib" path="C:/Users/Lautaro/Downloads/poi-bin-3.16-beta1-20161120/poi-3.16-beta1/ooxml-lib/xmlbeans-2.6.0.jar"/>
